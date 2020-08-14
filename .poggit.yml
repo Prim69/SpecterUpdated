@@ -1,0 +1,8 @@
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/Prim69/SpecterUpdated
+build-by-default: true
+branches:
+- master
+projects:
+  Specter-master.Specter-master:
+    path: Specter-master/Specter-master/
+...
