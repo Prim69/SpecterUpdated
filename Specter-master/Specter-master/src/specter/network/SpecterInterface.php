@@ -2,6 +2,8 @@
 
 namespace specter\network;
 
+use Exception;
+use InvalidArgumentException;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\DataPacket;
@@ -25,10 +27,11 @@ use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\UUID;
 use specter\Specter;
+use SplObjectStorage;
+use TypeError;
 
-class SpecterInterface implements SourceInterface
-{
-    /** @var  SpecterPlayer[]|\SplObjectStorage */
+class SpecterInterface implements SourceInterface{
+    /** @var  SpecterPlayer[]|SplObjectStorage */
     private $sessions;
     /** @var  Specter */
     private $specter;
@@ -37,10 +40,9 @@ class SpecterInterface implements SourceInterface
     /** @var  array */
     private $replyStore;
 
-    public function __construct(Specter $specter)
-    {
+    public function __construct(Specter $specter){
         $this->specter = $specter;
-        $this->sessions = new \SplObjectStorage();
+        $this->sessions = new SplObjectStorage();
         $this->ackStore = [];
         $this->replyStore = [];
     }
@@ -50,16 +52,6 @@ class SpecterInterface implements SourceInterface
         //NOOP
     }
 
-    /**
-     * Sends a DataPacket to the interface, returns an unique identifier for the packet if $needACK is true
-     *
-     * @param Player $player
-     * @param DataPacket $packet
-     * @param bool $needACK
-     * @param bool $immediate
-     *
-     * @return int
-     */
     public function putPacket(Player $player, DataPacket $packet, bool $needACK = false, bool $immediate = true): ?int
     {
         if ($player instanceof SpecterPlayer) {
@@ -146,7 +138,7 @@ class SpecterInterface implements SourceInterface
                         $pk = PacketPool::getPacketById(ord($buf{0}));
                         //$this->specter->getLogger()->info("PACK:" . get_class($pk));
                         if (!$pk->canBeBatched()) {
-                            throw new \InvalidArgumentException("Received invalid " . get_class($pk) . " inside BatchPacket");
+                            throw new InvalidArgumentException("Received invalid " . get_class($pk) . " inside BatchPacket");
                         }
 
                         $pk->setBuffer($buf, 1);
@@ -215,7 +207,7 @@ class SpecterInterface implements SourceInterface
             $pk->clientData["SkinId"] = "Specter";
             try {
                 $pk->clientData["SkinData"] = base64_encode(str_repeat(random_bytes(3) . "\xff", 2048));
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $pk->clientData["SkinData"] = base64_encode(str_repeat("\x80", 64 * 32 * 4));
             }
             $pk->clientData["SkinImageHeight"] = 32;
@@ -225,7 +217,7 @@ class SpecterInterface implements SourceInterface
             $pk->clientData["AnimatedImageData"] = [];
             $pk->clientData["PersonaPieces"] = [];
             $pk->clientData["PieceTintColors"] = [];
-            $pk->clientData["DeviceOS"] = 0;//TODO validate this. Steadfast says -1 = Unknown, but this would crash the PlayerInfo plugin
+            $pk->clientData["DeviceOS"] = 3;
             $pk->clientData["DeviceModel"] = "Specter";
             $pk->clientData["UIProfile"] = 0;
             $pk->clientData["GuiScale"] = -1;
@@ -241,7 +233,7 @@ class SpecterInterface implements SourceInterface
                 $this->sendPacket($player, $pk);
 
                 $player->setScoreTag("[SPECTER]");
-            } catch (\TypeError $error) {
+            } catch (TypeError $error) {
                 $this->specter->getLogger()->info(TextFormat::LIGHT_PURPLE . "Specter {$player->getName()} was not spawned: LoginPacket cancelled");
                 return false;
             }
