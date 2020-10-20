@@ -2,7 +2,6 @@
 
 namespace specter;
 
-use icontrolu\iControlU;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\entity\Entity;
@@ -11,7 +10,6 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\cheat\PlayerIllegalMoveEvent;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
-use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\network\mcpe\protocol\RespawnPacket;
 use pocketmine\network\mcpe\protocol\TextPacket;
@@ -21,50 +19,32 @@ use pocketmine\utils\TextFormat;
 use specter\network\SpecterInterface;
 use specter\network\SpecterPlayer;
 
-class Specter extends PluginBase implements Listener
-{
-    /** @var  SpecterInterface */
-    private $interface;
+class Specter extends PluginBase implements Listener{
 
-    public function onEnable()
-    {
+	private $interface;
+
+    public function onEnable(){
         $this->saveDefaultConfig();
         $this->interface = new SpecterInterface($this);
         $this->getServer()->getNetwork()->registerInterface($this->interface);
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
 
-    /**
-     * @param CommandSender $sender
-     * @param Command $command
-     * @param string $label
-     * @param string[] $args
-     *
-     * @return bool
-     */
-    public function onCommand(CommandSender $sender, Command $command, string $label, array $args): bool
-    {
+
+    public function onCommand(CommandSender $sender, Command $command, string $label, array $args): bool{
         if (isset($args[0])) {
             switch ($args[0]) {
                 case 'spawn':
-                case 'new':
-                case 'add':
-                case 's':
                     if (isset($args[1])) {
-                        if ($this->getInterface()->openSession($args[1], isset($args[2]) ? $args[2] : "SPECTER", isset($args[3]) ? $args[3] : 19133)) {
+                        if ($this->getInterface()->openSession($args[1], "SEXY", 42069)) {
                             $sender->sendMessage("Session started.");
                         } else {
                             $sender->sendMessage("Failed to open session");
                         }
                         return true;
-                    } else {
-                        return false;
                     }
                     break;
-                case 'kick':
-                case 'quit':
                 case 'close':
-                case 'q':
                     if (isset($args[1])) {
                         $player = $this->getServer()->getPlayer($args[1]);
                         if ($player instanceof SpecterPlayer) {
@@ -75,27 +55,6 @@ class Specter extends PluginBase implements Listener
                     } else {
                         $sender->sendMessage("Usage: /specter quit <p>");
                     }
-                    return true;
-                    break;
-                case 'move':
-                case 'm':
-                case 'teleport':
-                case 'tp':
-                    if (isset($args[4])) {
-                        $player = $this->getServer()->getPlayer($args[1]);
-                        if ($player instanceof SpecterPlayer) {
-                            $pk = new MovePlayerPacket();
-                            $pk->position = new Vector3($args[2], $args[3] + $player->getEyeHeight(), $args[4]);
-                            $pk->yaw = $player->getYaw() + 10; //This forces movement even if the movement is not large enough
-                            $pk->pitch = 0;
-                            $this->interface->queueReply($pk, $player->getName());
-                        } else {
-                            $sender->sendMessage("That player isn't managed by specter.");
-                        }
-                    } else {
-                        $sender->sendMessage("Usage: /specter move  <p> <x> <y> <z>");
-                    }
-                    return true;
                     break;
                 case 'attack':
                 case 'a':
@@ -135,11 +94,8 @@ class Specter extends PluginBase implements Listener
                     } else {
                         $sender->sendMessage("Usage: /specter attack <attacker> [eid:]<victim> [damage]");
                     }
-                    return true;
                     break;
-                case 'c':
                 case 'chat':
-                case 'command':
                     if (isset($args[2])) {
                         $player = $this->getServer()->getPlayer($args[1]);
                         if ($player instanceof SpecterPlayer) {
@@ -154,30 +110,6 @@ class Specter extends PluginBase implements Listener
                     } else {
                         $sender->sendMessage("Usage: /specter chat <p> <data>");
                     }
-                    return true;
-                    break;
-                case 'control': //TODO update iControlU with better support
-                case 'icu':
-                    if ($sender instanceof Player) {
-                        $icu = $this->getICU();
-                        if ($icu instanceof iControlU) {
-                            $player = $this->getServer()->getPlayer($args[1]);
-                            if ($player instanceof SpecterPlayer) {
-                                if ($icu->isControl($sender)) {
-                                    $this->getServer()->dispatchCommand($sender, "icu control " . $args[1]);
-                                } else {
-                                    $this->getServer()->dispatchCommand($sender, "icu stop ");
-                                }
-                            } else {
-                                $sender->sendMessage("That player isn't a specter player");
-                            }
-                        } else {
-                            $sender->sendMessage("You need to have iControlU to use this feature.");
-                        }
-                    } else {
-                        $sender->sendMessage("This command must be run in game.");
-                    }
-                    return true;
                     break;
                 case "respawn":
                 case "r":
@@ -199,7 +131,6 @@ class Specter extends PluginBase implements Listener
                     } else {
                         $sender->sendMessage("That player isn't a specter player");
                     }
-                    return true;
                     break;
             }
         }
@@ -238,19 +169,18 @@ class Specter extends PluginBase implements Listener
             }
         }
     */
-    /**
-     * @return SpecterInterface
-     */
-    public function getInterface()
-    {
+
+    public function getInterface(){
         return $this->interface;
     }
+	//doesnt work
+    public function onDamage(EntityDamageByEntityEvent $event){
+    	if($event->isCancelled()) return;
+    	$player = $event->getEntity();
+    	$damager = $event->getDamager();
+    	if($player instanceof SpecterPlayer && $damager instanceof Player){
+    		$player->knockBack($damager, 0, $player->x - $damager->x, $player->z - $damager->z, 0.4);
+		}
+	}
 
-    /**
-     * @return null|\icontrolu\iControlU
-     */
-    public function getICU()
-    {
-        return $this->getServer()->getPluginManager()->getPlugin("iControlU");
-    }
 }
